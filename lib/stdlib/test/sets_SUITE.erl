@@ -471,12 +471,13 @@ iterate_set_1(M, {E, I}, R) ->
 sets_mods() ->
     Ordsets = sets_test_lib:new(ordsets, fun(X, Y) -> X == Y end),
     Sets = sets_test_lib:new(sets, fun(X, Y) ->
-					   lists:sort(sets:to_list(X)) == 
+					   lists:sort(sets:to_list(X)) ==
 					       lists:sort(sets:to_list(Y)) end),
     Gb = sets_test_lib:new(gb_sets, fun(X, Y) ->
-					    gb_sets:to_list(X) == 
+					    gb_sets:to_list(X) ==
 						gb_sets:to_list(Y) end),
-    [Ordsets,Sets,Gb].
+    Map = sets_test_lib:new(map_sets, fun(X, Y) -> X == Y end),
+    [Ordsets,Sets,Gb,Map].
 
 test_all(Tester) ->
     Res = [begin

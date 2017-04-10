@@ -94,6 +94,7 @@ MODULES= \
 	lib \
 	lists \
 	log_mf_h \
+	map_sets \
 	maps \
 	math \
 	ms_transform \
