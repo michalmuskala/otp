@@ -523,7 +523,9 @@ static GenOp* const_select_val(LoaderState* stp, GenOpArg S, GenOpArg Fail,
 
 static GenOp* gen_get_map_element(LoaderState* stp, GenOpArg Fail, GenOpArg Src,
                                   GenOpArg Size, GenOpArg* Rest);
-static GenOp* gen_move_x(LoaderState* stp, GenOpArg Src, GenOpArg x);
+static GenOp* gen_bs_append(LoaderState* stp, GenOpArg Fail, GenOpArg Size,
+                            GenOpArg Extra, GenOpArg Live, GenOpArg Unit,
+                            GenOpArg Bin, GenOpArg Dst);
 
 static int freeze_code(LoaderState* stp);
 
@@ -4318,19 +4320,39 @@ gen_new_small_map_lit(LoaderState* stp, GenOpArg Dst, GenOpArg Live,
 }
 
 static GenOp*
-gen_move_x(LoaderState* stp, GenOpArg Src, GenOpArg x)
+gen_bs_append(LoaderState* stp, GenOpArg Fail, GenOpArg Size,
+              GenOpArg Extra, GenOpArg Live, GenOpArg Unit,
+              GenOpArg Bin, GenOpArg Dst)
 {
-    GenOp* op;
+    GenOp* move;
+    GenOp* append;
 
-    NEW_GENOP(stp, op);
-    op->next = NULL;
-    op->op = genop_move_2;
-    op->arity = 2;
-    op->a[0] = Src;
-    op->a[1].type = TAG_x;
-    op->a[1].val = x.val;
+    NEW_GENOP(stp, append);
 
-    return op;
+    append->next = NULL;
+    append->op = genop_i_bs_append_6;
+    append->arity = 6;
+    append->a[0] = Fail;
+    append->a[1] = Extra;
+    append->a[2] = Live;
+    append->a[3] = Unit;
+    append->a[4] = Size;
+    append->a[5] = Dst;
+
+    if (Bin.type == TAG_x && Bin.val == Live.val) {
+        return append;
+    }
+
+    NEW_GENOP(stp, move);
+
+    move->next = append;
+    move->op = genop_move_2;
+    move->arity = 2;
+    move->a[0] = Bin;
+    move->a[1].type = TAG_x;
+    move->a[1].val = Live.val;
+
+    return move;
 }
 
 /*
