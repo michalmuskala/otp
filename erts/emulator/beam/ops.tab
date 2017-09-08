@@ -1204,7 +1204,7 @@ bs_add Fail S1=i==0 S2 Unit=u==1 D => move S2 D
 bs_add j s s t x
 
 bs_append Fail Size Extra Live Unit Bin Flags Dst => \
-  move Bin x | i_bs_append Fail Extra Live Unit Size Dst
+  gen_move_x(Bin, Live) | i_bs_append Fail Extra Live Unit Size Dst
 
 bs_private_append Fail Size Unit Bin Flags Dst => \
   i_bs_private_append Fail Unit Size Bin Dst

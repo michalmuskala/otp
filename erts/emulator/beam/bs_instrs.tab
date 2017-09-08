@@ -582,7 +582,7 @@ i_bs_append(Fail, ExtraHeap, Live, Unit, Size, Dst) {
     Uint res;
 
     HEAVY_SWAPOUT;
-    reg[live] = x(SCRATCH_X_REG);
+    /* reg[live] = x(SCRATCH_X_REG); */
     res = erts_bs_append(c_p, reg, live, $Size, $ExtraHeap, $Unit);
     HEAVY_SWAPIN;
     if (is_non_value(res)) {

@@ -523,6 +523,7 @@ static GenOp* const_select_val(LoaderState* stp, GenOpArg S, GenOpArg Fail,
 
 static GenOp* gen_get_map_element(LoaderState* stp, GenOpArg Fail, GenOpArg Src,
                                   GenOpArg Size, GenOpArg* Rest);
+static GenOp* gen_move_x(LoaderState* stp, GenOpArg Src, GenOpArg x);
 
 static int freeze_code(LoaderState* stp);
 
@@ -4312,6 +4313,22 @@ gen_new_small_map_lit(LoaderState* stp, GenOpArg Dst, GenOpArg Live,
     op->a[1] = Live;
     op->a[2].type = TAG_q;
     op->a[2].val = lit;
+
+    return op;
+}
+
+static GenOp*
+gen_move_x(LoaderState* stp, GenOpArg Src, GenOpArg x)
+{
+    GenOp* op;
+
+    NEW_GENOP(stp, op);
+    op->next = NULL;
+    op->op = genop_move_2;
+    op->arity = 2;
+    op->a[0] = Src;
+    op->a[1].type = TAG_x;
+    op->a[1].val = x.val;
 
     return op;
 }
