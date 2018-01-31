@@ -65,6 +65,7 @@ MODULES =  \
 	beam_reorder \
 	beam_record \
 	beam_split \
+	beam_map \
 	beam_trim \
 	beam_type \
 	beam_utils \
@@ -109,7 +110,7 @@ EXTRA_FILES= $(EGEN)/beam_opcodes.hrl
 ERL_FILES= $(MODULES:%=%.erl)
 INSTALL_FILES= $(MODULES:%=$(EBIN)/%.$(EMULATOR)) $(APP_TARGET) $(APPUP_TARGET)
 TARGET_FILES= $(INSTALL_FILES)
- 
+
 APP_FILE= compiler.app
 APP_SRC= $(APP_FILE).src
 APP_TARGET= $(EBIN)/$(APP_FILE)
@@ -168,7 +169,7 @@ $(EBIN)/core_parse.beam: $(EGEN)/core_parse.erl
 
 # ----------------------------------------------------
 # Release Target
-# ---------------------------------------------------- 
+# ----------------------------------------------------
 include $(ERL_TOP)/make/otp_release_targets.mk
 
 release_spec: opt
@@ -182,7 +183,7 @@ release_docs_spec:
 
 # ----------------------------------------------------
 # Dependencies -- alphabetically, please
-# ---------------------------------------------------- 
+# ----------------------------------------------------
 
 $(EBIN)/beam_disasm.beam: $(EGEN)/beam_opcodes.hrl beam_disasm.hrl
 $(EBIN)/beam_listing.beam: core_parse.hrl v3_kernel.hrl

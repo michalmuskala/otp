@@ -761,6 +761,8 @@ asm_passes() ->
 	 {iff,dtype,{listing,"type"}},
 	 {pass,beam_split},
 	 {iff,dsplit,{listing,"split"}},
+         {pass,beam_map},
+         {iff,dmap,{listing,"map"}},
 	 {unless,no_dead,{pass,beam_dead}},
 	 {iff,ddead,{listing,"dead"}},
 	 {unless,no_jopt,{pass,beam_jump}},
@@ -782,8 +784,8 @@ asm_passes() ->
 	 {pass,beam_flatten}]},
 
        %% If post optimizations are turned off, we still
-       %% need to do a few clean-ups to code.
-       {iff,no_postopt,[{pass,beam_clean}]},
+       %% need to do a few clean-ups to code and join maps.
+       {iff,no_postopt,[{pass,beam_map},{pass,beam_clean}]},
 
        {pass,beam_z},
        {iff,dz,{listing,"z"}},

@@ -18,7 +18,7 @@
 %% %CopyrightEnd%
 %%
 %% Purpose : Common utilities used by several optimization passes.
-%% 
+%%
 
 -module(beam_utils).
 -export([is_killed_block/2,is_killed/3,is_killed_at/3,
@@ -262,10 +262,10 @@ is_pure_test({test,test_arity,_,[_,_]}) -> true;
 is_pure_test({test,has_map_fields,_,[_|_]}) -> true;
 is_pure_test({test,is_bitstr,_,[_]}) -> true;
 is_pure_test({test,is_function2,_,[_,_]}) -> true;
-is_pure_test({test,Op,_,Ops}) -> 
+is_pure_test({test,Op,_,Ops}) ->
     erl_internal:new_type_test(Op, length(Ops)).
 
-    
+
 %% live_opt([Instruction]) -> [Instruction].
 %%  Go through the instruction sequence in reverse execution
 %%  order, keep track of liveness and remove 'move' instructions
@@ -395,7 +395,7 @@ check_liveness(R, [{select,_,_,Fail,Branches}|_], St) ->
     check_liveness_everywhere(R, [Fail|Branches], St);
 check_liveness(R, [{jump,{f,F}}|_], St) ->
     check_liveness_at(R, F, St);
-check_liveness(R, [{case_end,Used}|_], St) -> 
+check_liveness(R, [{case_end,Used}|_], St) ->
     check_liveness_ret(R, Used, St);
 check_liveness(R, [{try_case_end,Used}|_], St) ->
     check_liveness_ret(R, Used, St);
@@ -571,6 +571,17 @@ check_liveness(R, [{loop_rec_end,{f,Fail}}|_], St) ->
     check_liveness_at(R, Fail, St);
 check_liveness(R, [{line,_}|Is], St) ->
     check_liveness(R, Is, St);
+check_liveness(R, [{get_map_element,{f,Fail},S,K,V}|Is], St0) ->
+    case R =:= S orelse R =:= K of
+        true ->
+            {used,St0};
+        false ->
+            case check_liveness_at(R, Fail, St0) of
+                {killed,_}=Killed when R =:= V -> Killed;
+                {killed,St} -> check_liveness(R, Is, St);
+                Other -> Other
+            end
+    end;
 check_liveness(R, [{get_map_elements,{f,Fail},S,{list,L}}|Is], St0) ->
     {Ss,Ds} = split_even(L),
     case member(R, [S|Ss]) of
@@ -673,7 +684,7 @@ check_liveness_ret(_, _, St) -> {killed,St}.
 %%  (Unknown instructions will cause an exception.)
 
 check_liveness_block({x,X}=R, [{set,Ds,Ss,{alloc,Live,Op}}|Is], St0) ->
-    if 
+    if
 	X >= Live ->
 	    {killed,St0};
 	true ->
@@ -805,6 +816,8 @@ replace_labels_1([{put_map=I,{f,Lbl},Op,Src,Dst,Live,List}|Is], Acc, D, Fb)
     replace_labels_1(Is, [{I,{f,label(Lbl, D, Fb)},Op,Src,Dst,Live,List}|Acc], D, Fb);
 replace_labels_1([{get_map_elements=I,{f,Lbl},Src,List}|Is], Acc, D, Fb) when Lbl =/= 0 ->
     replace_labels_1(Is, [{I,{f,label(Lbl, D, Fb)},Src,List}|Acc], D, Fb);
+replace_labels_1([{get_map_element=I,{f,Lbl},Src,Key,Dst}|Is], Acc, D, Fb) when Lbl =/= 0 ->
+    replace_labels_1(Is, [{I,{f,label(Lbl, D, Fb)},Src,Key,Dst}|Acc], D, Fb);
 replace_labels_1([I|Is], Acc, D, Fb) ->
     replace_labels_1(Is, [I|Acc], D, Fb);
 replace_labels_1([], Acc, _, _) -> Acc.
@@ -933,6 +946,10 @@ live_opt([timeout=I|Is], _, D, Acc) ->
     live_opt(Is, 0, D, [I|Acc]);
 live_opt([{wait,_}=I|Is], _, D, Acc) ->
     live_opt(Is, 0, D, [I|Acc]);
+live_opt([{get_map_element,Fail,Src,Key,Dst}=I|Is], Regs0, D, Acc) ->
+    Regs1 = x_live([Src,Key], x_dead([Dst], Regs0)),
+    Regs = live_join_label(Fail, D, Regs1),
+    live_opt(Is, Regs, D, [I|Acc]);
 live_opt([{get_map_elements,Fail,Src,{list,List}}=I|Is], Regs0, D, Acc) ->
     {Ss,Ds} = split_even(List),
     Regs1 = x_live([Src|Ss], x_dead(Ds, Regs0)),
@@ -1029,6 +1046,8 @@ live_opt_block_op({alloc,Live0,AllocOp}, Regs0, D) ->
     true = Live =< Live0,
     {{alloc,Live,AllocOp}, live_call(Live)};
 live_opt_block_op({bif,_N,Fail} = Op, Regs, D) ->
+    {Op, live_join_label(Fail, D, Regs)};
+live_opt_block_op({get_map_element,Fail} = Op, Regs, D) ->
     {Op, live_join_label(Fail, D, Regs)};
 live_opt_block_op(Op, Regs, _D) ->
     {Op, Regs}.

@@ -155,7 +155,7 @@ include_attribute(compile) -> false;
 include_attribute(_) -> true.
 
 function({#c_var{name={F,Arity}=FA},Body}, St0) ->
-    %%io:format("~w/~w~n", [F,Arity]),
+    % io:format("~w/~w~n", [F,Arity]),
     try
 	St1 = St0#kern{func=FA,ff=undefined,vcount=0,fcount=0,ds=cerl_sets:new()},
 	{#ifun{anno=Ab,vars=Kvs,body=B0},[],St2} = expr(Body, new_sub(), St1),
@@ -674,7 +674,7 @@ wrap_guard(Core, St0) ->
     Var = #c_var{name=VarName},
     Try = #c_try{arg=Core,vars=[Var],body=Var,evars=[],handler=#c_literal{val=false}},
     {Try,St}.
-    
+
 %% gexpr_test(Kexpr, State) -> {Kexpr,State}.
 %%  Builds the final boolean test from the last Kexpr in a guard test.
 %%  Must enter try blocks and isets and find the last Kexpr in them.
@@ -713,6 +713,7 @@ gexpr_test_add(Ke, St0) ->
 %%  Convert a Core expression, flattening it at the same time.
 
 expr(#c_var{anno=A,name={_Name,Arity}}=Fname, Sub, St) ->
+    io:format("~p~n", [Fname]),
     %% A local in an expression.
     %% For now, these are wrapped into a fun by reverse
     %% eta-conversion, but really, there should be exactly one
@@ -1115,7 +1116,7 @@ atomic(Ce, Sub, St0) ->
 
 force_atomic(Ke, St0) ->
     case is_atomic(Ke) of
-	true -> {Ke,[],St0}; 
+	true -> {Ke,[],St0};
 	false ->
 	    {V,St1} = new_var(St0),
 	    {V,[#iset{vars=[V],arg=Ke}],St1}
@@ -1148,7 +1149,7 @@ validate_bin_element_size(#k_int{val=V}) when V >= 0 -> ok;
 validate_bin_element_size(#k_atom{val=all}) -> ok;
 validate_bin_element_size(#k_atom{val=undefined}) -> ok;
 validate_bin_element_size(_) -> throw(bad_element_size).
-    
+
 %% atomic_list([Cexpr], Sub, State) -> {[Kexpr],[PreKexpr],State}.
 
 atomic_list(Ces, Sub, St) ->
@@ -1250,7 +1251,7 @@ pattern_bin(Es, Isub, Osub0, St0) ->
     {Kbin,{_,Osub},St} = pattern_bin_1(Es, Isub, Osub0, St0),
     {Kbin,Osub,St}.
 
-pattern_bin_1([#c_bitstr{anno=A,val=E0,size=S0,unit=U,type=T,flags=Fs}|Es0], 
+pattern_bin_1([#c_bitstr{anno=A,val=E0,size=S0,unit=U,type=T,flags=Fs}|Es0],
 	    Isub0, Osub0, St0) ->
     {S1,[],St1} = expr(S0, Isub0, St0),
     S = case S1 of
@@ -1509,7 +1510,7 @@ match_guard_1([#iclause{anno=A,osub=Osub,guard=G,body=B}|Cs0], Def0, St0) ->
 	    {[#k_guard_clause{guard=Kg,body=pre_seq(Pb, Kb)}|Cs1],
 	     Def1,St3}
     end;
-match_guard_1([], Def, St) -> {[],Def,St}. 
+match_guard_1([], Def, St) -> {[],Def,St}.
 
 maybe_add_warning([C|_], MatchAnno, St) ->
     maybe_add_warning(C, MatchAnno, St);
@@ -1529,11 +1530,11 @@ maybe_add_warning(Ke, MatchAnno, St) ->
 		   end,
 	    add_warning(Line, Warn, Anno, St)
     end.
-    
+
 get_line([Line|_]) when is_integer(Line) -> Line;
 get_line([_|T]) -> get_line(T);
 get_line([]) -> none.
-    
+
 get_file([{file,File}|_]) -> File;
 get_file([_|T]) -> get_file(T);
 get_file([]) -> "no_file". % should not happen
@@ -2152,7 +2153,7 @@ arg_con(Arg) ->
 	#k_float{} -> k_float;
 	#k_atom{} -> k_atom;
 	#k_nil{} -> k_nil;
-	#k_cons{} -> k_cons; 
+	#k_cons{} -> k_cons;
 	#k_tuple{} -> k_tuple;
 	#k_map{} -> k_map;
 	#k_binary{} -> k_binary;
@@ -2411,7 +2412,7 @@ uexpr(#ifun{anno=A,vars=Vs,body=B0}, {break,Rs}, St0) ->
     Fvs = make_vars(Free),
     Arity = length(Vs) + length(Free),
     {Fname,St} =
-	case lists:keyfind(id, 1, A) of 
+	case lists:keyfind(id, 1, A) of
 	    {id,{_,_,Fname0}} ->
 		{Fname0,St1};
 	    false ->

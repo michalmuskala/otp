@@ -71,7 +71,7 @@ format_error(Error) ->
 
 %%%
 %%% Local functions follow.
-%%% 
+%%%
 
 %%%
 %%% The validator follows.
@@ -407,11 +407,11 @@ valfun_1({trim,N,Remaining}, #vst{current=#st{y=Yregs0,numy=NumY}=St}=Vst) ->
     end;
 %% Catch & try.
 valfun_1({'catch',Dst,{f,Fail}}, Vst0) when Fail /= none ->
-    Vst = #vst{current=#st{ct=Fails}=St} = 
+    Vst = #vst{current=#st{ct=Fails}=St} =
 	set_type_y({catchtag,[Fail]}, Dst, Vst0),
     Vst#vst{current=St#st{ct=[[Fail]|Fails]}};
 valfun_1({'try',Dst,{f,Fail}}, Vst0) ->
-    Vst = #vst{current=#st{ct=Fails}=St} = 
+    Vst = #vst{current=#st{ct=Fails}=St} =
 	set_type_y({trytag,[Fail]}, Dst, Vst0),
     Vst#vst{current=St#st{ct=[[Fail]|Fails]}};
 valfun_1({catch_end,Reg}, #vst{current=#st{ct=[Fail|Fails]}}=Vst0) ->
@@ -513,7 +513,7 @@ valfun_4({call_last,Live,Func,StkSize}, #vst{current=#st{numy=StkSize}}=Vst) ->
     tail_call(Func, Live, Vst);
 valfun_4({call_last,_,_,_}, #vst{current=#st{numy=NumY}}) ->
     error({allocated,NumY});
-valfun_4({call_ext_last,Live,Func,StkSize}, 
+valfun_4({call_ext_last,Live,Func,StkSize},
 	 #vst{current=#st{numy=StkSize}}=Vst) ->
     tail_call(Func, Live, Vst);
 valfun_4({call_ext_last,_,_,_}, #vst{current=#st{numy=NumY}}) ->
@@ -773,26 +773,23 @@ valfun_4({get_map_elements,{f,Fail},Src,{list,List}}, Vst) ->
 valfun_4(_, _) ->
     error(unknown_instruction).
 
+verify_get_map(Fail, Src, [Key,Val], Vst0) ->
+    assert_type(map, Src, Vst0),
+    assert_term(Key, Vst0),
+    Vst = branch_state(Fail, Vst0),
+    set_type_reg(term, Val, Vst);
 verify_get_map(Fail, Src, List, Vst0) ->
     assert_type(map, Src, Vst0),
+    {Keys,Vals} = beam_utils:split_even(List),
     Vst1 = foldl(fun(D, Vsti) ->
                          case is_reg_defined(D,Vsti) of
                              true -> set_type_reg(term,D,Vsti);
                              false -> Vsti
                          end
-                 end, Vst0, extract_map_vals(List)),
+                 end, Vst0, Vals),
     Vst2 = branch_state(Fail, Vst1),
-    Keys = extract_map_keys(List),
     assert_unique_map_keys(Keys),
     verify_get_map_pair(List,Vst0,Vst2).
-
-extract_map_vals([_Key,Val|T]) ->
-    [Val|extract_map_vals(T)];
-extract_map_vals([]) -> [].
-
-extract_map_keys([Key,_Val|T]) ->
-    [Key|extract_map_keys(T)];
-extract_map_keys([]) -> [].
 
 verify_get_map_pair([],_,Vst) -> Vst;
 verify_get_map_pair([Src,Dst|Vs],Vst0,Vsti) ->
@@ -807,7 +804,7 @@ verify_put_map(Fail, Src, Dst, Live, List, Vst0) ->
     Vst1 = heap_alloc(0, Vst0),
     Vst2 = branch_state(Fail, Vst1),
     Vst = prune_x_regs(Live, Vst2),
-    Keys = extract_map_keys(List),
+    {Keys, _Vals} = beam_utils:split_even(List),
     assert_unique_map_keys(Keys),
     set_type_reg(map, Dst, Vst).
 
@@ -951,7 +948,7 @@ verify_call_match_context(Lbl, Ctx, #vst{ft=Ft}) ->
 allocate(Zero, Stk, Heap, Live, #vst{current=#st{numy=none}}=Vst0) ->
     verify_live(Live, Vst0),
     Vst = #vst{current=St} = prune_x_regs(Live, Vst0),
-    Ys = init_regs(Stk, case Zero of 
+    Ys = init_regs(Stk, case Zero of
 			    true -> initialized;
 			    false -> uninitialized
 			end),
@@ -985,7 +982,7 @@ heap_alloc_2([{floats,Floats}|T], St0) ->
     St = St0#st{hf=Floats},
     heap_alloc_2(T, St);
 heap_alloc_2([], St) -> St.
-    
+
 prune_x_regs(Live, #vst{current=#st{x=Xs0}=St0}=Vst) when is_integer(Live) ->
     Xs1 = gb_trees:to_list(Xs0),
     Xs = [P || {R,_}=P <- Xs1, R < Live],
@@ -1007,7 +1004,7 @@ prune_x_regs(Live, #vst{current=#st{x=Xs0}=St0}=Vst) when is_integer(Live) ->
 %%%
 %%% The following instructions may be executed in any state:
 %%%
-%%%   fconv Src {fr,_}             
+%%%   fconv Src {fr,_}
 %%%   fmove Src {fr,_}		%% Move INTO floating point register.
 %%%
 
@@ -1090,7 +1087,7 @@ bsm_get_context({x,X}=Reg, #vst{current=#st{x=Xs}}=_Vst) when is_integer(X) ->
 	_ -> error({no_bsm_context,Reg})
     end;
 bsm_get_context(Reg, _) -> error({bad_source,Reg}).
-    
+
 bsm_save(Reg, {atom,start}, Vst) ->
     %% Save point refering to where the match started.
     %% It is always valid. But don't forget to validate the context register.
@@ -1258,7 +1255,7 @@ assert_type(Needed, Actual) ->
 upgrade_tuple_type({tuple,[Sz]}, {tuple,[OldSz]}=T) when Sz < OldSz ->
     %% The old type has a higher value for the least tuple size.
     T;
-upgrade_tuple_type({tuple,[Sz]}, {tuple,OldSz}=T) 
+upgrade_tuple_type({tuple,[Sz]}, {tuple,OldSz}=T)
   when is_integer(Sz), is_integer(OldSz), Sz =< OldSz ->
     %% The old size is exact, and the new size is smaller than the old size.
     T;
@@ -1337,7 +1334,7 @@ get_literal(T) -> error({not_literal,T}).
 
 
 branch_arities([], _, #vst{}=Vst) -> Vst;
-branch_arities([Sz,{f,L}|T], Tuple, #vst{current=St}=Vst0) 
+branch_arities([Sz,{f,L}|T], Tuple, #vst{current=St}=Vst0)
   when is_integer(Sz) ->
     Vst1 = set_type_reg({tuple,Sz}, Tuple, Vst0),
     Vst = branch_state(L, Vst1),
@@ -1434,15 +1431,15 @@ merge_types({trytag,T0},{trytag,T1}) ->
     {trytag,ordsets:from_list(T0++T1)};
 merge_types({tuple,A}, {tuple,B}) ->
     {tuple,[min(tuple_sz(A), tuple_sz(B))]};
-merge_types({Type,A}, {Type,B}) 
+merge_types({Type,A}, {Type,B})
   when Type =:= atom; Type =:= integer; Type =:= float ->
     if A =:= B -> {Type,A};
        true -> {Type,[]}
     end;
-merge_types({Type,_}, number) 
+merge_types({Type,_}, number)
   when Type =:= integer; Type =:= float ->
     number;
-merge_types(number, {Type,_}) 
+merge_types(number, {Type,_})
   when Type =:= integer; Type =:= float ->
     number;
 merge_types(bool, {atom,A}) ->
@@ -1467,7 +1464,7 @@ merge_bool([]) -> {atom,[]};
 merge_bool(true) -> bool;
 merge_bool(false) -> bool;
 merge_bool(_) -> {atom,[]}.
-    
+
 verify_y_init(#vst{current=#st{y=Ys}}) ->
     verify_y_init_1(gb_trees:to_list(Ys)).
 

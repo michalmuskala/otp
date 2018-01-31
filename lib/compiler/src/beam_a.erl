@@ -61,6 +61,8 @@ rename_instrs([{'%live',_}|Is]) ->
     %% Ignore old type of live annotation. Only happens when compiling
     %% from very old .S files.
     rename_instrs(Is);
+rename_instrs([{get_map_elements,F,S,{list,KVs}}|Is]) ->
+    unfold_map_elements(KVs, F, S, []) ++ rename_instrs(Is);
 rename_instrs([I|Is]) ->
     [rename_instr(I)|rename_instrs(Is)];
 rename_instrs([]) -> [].
@@ -112,3 +114,8 @@ rename_instr({select_tuple_arity=I,Reg,Fail,{list,List}}) ->
 rename_instr(send) ->
     {call_ext,2,send};
 rename_instr(I) -> I.
+
+unfold_map_elements([K,V|KVs], F, S, Acc) ->
+    unfold_map_elements(KVs, F, S, [{get_map_element,F,S,K,V}|Acc]);
+unfold_map_elements([], _F, _S, Acc) ->
+    lists:sort(fun ({_,_,_,_,V1}, {_,_,_,_,V2}) -> V1 =< V2 end, Acc).

@@ -492,7 +492,9 @@ update({test,is_map,_Fail,[Src]}, Ts0) ->
 update({get_map_elements,_,Src,{list,Elems0}}, Ts0) ->
     {_Ss,Ds} = beam_utils:split_even(Elems0),
     Elems = [{Dst,kill} || Dst <- Ds],
-    tdb_update([{Src,map}|Elems], Ts0);
+    tdb_update(Elems, Ts0);
+update({get_map_element,_,Src,_Key,Dst}, Ts0) ->
+    tdb_update([{Dst,kill}], Ts0);
 update({test,is_nonempty_list,_Fail,[Src]}, Ts0) ->
     tdb_update([{Src,nonempty_list}], Ts0);
 update({test,is_eq_exact,_,[Reg,{atom,_}=Atom]}, Ts) ->
@@ -807,7 +809,7 @@ checkerror_1([], OrigIs) -> OrigIs.
 checkerror_2(OrigIs) -> [{set,[],[],fcheckerror}|OrigIs].
 
 
-%%% Routines for maintaining a type database.  The type database 
+%%% Routines for maintaining a type database.  The type database
 %%% associates type information with registers.
 %%%
 %%% {tuple,min_size,Size,First} means that the corresponding register contains
@@ -926,7 +928,7 @@ tdb_kill_xregs([{{x,_},_Type}|Db]) -> tdb_kill_xregs(Db);
 tdb_kill_xregs([{{y,_},{tuple_element,{x,_},_}}|Db]) -> tdb_kill_xregs(Db);
 tdb_kill_xregs([Any|Db]) -> [Any|tdb_kill_xregs(Db)];
 tdb_kill_xregs([]) -> [].
-    
+
 remove_key(Key, [{Key,_Op}|Ops]) -> remove_key(Key, Ops);
 remove_key(_, Ops) -> Ops.
 

@@ -61,6 +61,8 @@ split_block([{set,[D],[S|Puts],{alloc,R,{put_map,Op,{f,Lbl}=Fail}}}|Is],
 			 make_block(Bl, Acc)]);
 split_block([{set,[R],[],{try_catch,Op,L}}|Is], Bl, Acc) ->
     split_block(Is, [], [{Op,R,L}|make_block(Bl, Acc)]);
+split_block([{set,[D],[S,K],{get_map_element,F}}|Is], Bl, Acc) ->
+    split_block(Is, [], [{get_map_element,F,S,K,D}|make_block(Bl,Acc)]);
 split_block([{set,[],[],{line,_}=Line}|Is], Bl, Acc) ->
     split_block(Is, [], [Line|make_block(Bl, Acc)]);
 split_block([I|Is], Bl, Acc) ->
