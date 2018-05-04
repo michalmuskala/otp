@@ -479,9 +479,30 @@ expr(#c_try{anno=A,arg=E0,vars=Vs0,body=B0,evars=Evs0,handler=H0}=Try, _, Sub0) 
 	    expr(#c_let{anno=A,vars=Vs1,arg=E1,body=B1}, value, Sub0);
 	false ->
 	    {Evs1,Sub2} = var_list(Evs0, Sub0),
-	    H1 = body(H0, value, Sub2),
-	    Try#c_try{arg=E1,vars=Vs1,body=B1,evars=Evs1,handler=H1}
+		H1 = opt_get_stacktrace(H0, hd(Evs1)),
+	    H2 = body(H1, value, Sub2),
+	    Try#c_try{arg=E1,vars=Vs1,body=B1,evars=Evs1,handler=H2}
     end.
+
+%% opt_get_stacktrace(Handler, Evars) -> Core.
+%%  If erlang:get_stacktrace/0 call is the first thing in the handler,
+%%  it can be safely converted to build_stacktrace/1.
+
+opt_get_stacktrace(#c_case{clauses=Clauses0}=Case, RawStk) ->
+    Clauses = lists:map(fun (#c_clause{body=Body0}=Clause) ->
+        Body = opt_get_stacktrace(Body0, RawStk),
+        Clause#c_clause{body=Body}
+    end, Clauses0),
+    Case#c_case{clauses=Clauses};
+opt_get_stacktrace(#c_let{arg=#c_call{anno=A,
+                                      module=#c_literal{val=erlang},
+                                      name=#c_literal{val=get_stacktrace},
+                                      args=[]}}=Let, RawStk) ->
+    io:format("get_stacktrace opted~n"),
+    Build = #c_primop{anno=A,name=#c_literal{val=build_stacktrace},args=[RawStk]},
+    Let#c_let{arg=Build};
+opt_get_stacktrace(Other, _) ->
+	Other.
 
 expr_list(Es, Ctxt, Sub) ->
     [expr(E, Ctxt, Sub) || E <- Es].

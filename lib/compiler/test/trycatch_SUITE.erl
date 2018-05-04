@@ -1,8 +1,8 @@
 %%
 %% %CopyrightBegin%
-%% 
+%%
 %% Copyright Ericsson AB 2003-2016. All Rights Reserved.
-%% 
+%%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
 %% You may obtain a copy of the License at
@@ -14,12 +14,12 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%% 
+%%
 %% %CopyrightEnd%
 %%
 -module(trycatch_SUITE).
 
--export([all/0, suite/0,groups/0,init_per_suite/1, end_per_suite/1, 
+-export([all/0, suite/0,groups/0,init_per_suite/1, end_per_suite/1,
 	 init_per_group/2,end_per_group/2,basic/1,lean_throw/1,
 	 try_of/1,try_after/1,%after_bind/1,
 	 catch_oops/1,after_oops/1,eclectic/1,rethrow/1,
@@ -33,11 +33,11 @@
 
 suite() -> [{ct_hooks,[ts_install_cth]}].
 
-all() -> 
+all() ->
     test_lib:recompile(?MODULE),
     [{group,p}].
 
-groups() -> 
+groups() ->
     [{p,[parallel],
       [basic,lean_throw,try_of,try_after,catch_oops,
        after_oops,eclectic,rethrow,nested_of,nested_catch,
@@ -64,17 +64,17 @@ end_per_group(_GroupName, Config) ->
 basic(Conf) when is_list(Conf) ->
     2 =
 	try my_div(4, 2)
-	catch 
+	catch
             Class:Reason -> {Class,Reason}
 	end,
     error =
         try my_div(1, 0)
-        catch 
+        catch
             error:badarith -> error
         end,
     error =
         try 1.0 / zero()
-        catch 
+        catch
             error:badarith -> error
         end,
     ok =
@@ -84,7 +84,7 @@ basic(Conf) when is_list(Conf) ->
         end,
     exit_nisse =
         try exit(nisse)
-	catch 
+	catch
             exit:nisse -> exit_nisse
         end,
     ok =
@@ -134,7 +134,7 @@ after_call() ->
 
 after_clean() ->
     after_was_called = erase(basic).
-    
+
 
 lean_throw(Conf) when is_list(Conf) ->
     {throw,kalle} =
@@ -268,7 +268,7 @@ after_bind_1(X, V, Y) ->
             after
                 After = foo(Y)
 	    end,
-        {Try,After} 
+        {Try,After}
     of
         V -> {value,V}
     catch
@@ -387,7 +387,7 @@ eclectic_2(X, C, Y) ->
     Done = make_ref(),
     erase(eclectic),
     Catch =
-	case 
+	case
             catch
 		{Done,
 		 try foo(X) of
@@ -556,8 +556,8 @@ nested_of_1({X1,C1,V1},
             try self()
             of
                 Self ->
-                    try 
-                        foo(X1) 
+                    try
+                        foo(X1)
 	            of
 	                V1 -> {value1,foo(X2)}
                     catch
@@ -681,8 +681,8 @@ nested_catch_1({X1,C1,V1},
             try throw(Throw)
             catch
 		Throw ->
-                    try 
-                        foo(X1) 
+                    try
+                        foo(X1)
 	            of
 	                V1 -> {value1,foo(X2)}
                     catch
@@ -782,8 +782,8 @@ nested_after_1({X1,C1,V1},
             try self()
             after
                 After =
-                    try 
-                        foo(X1) 
+                    try
+                        foo(X1)
 	            of
 	                V1 -> {value1,foo(X2)}
                     catch
@@ -834,7 +834,7 @@ foo({'add',{A,B}}) ->
     my_add(A, B);
 foo({'abs',X}) ->
     my_abs(X);
-foo({error,Error}) -> 
+foo({error,Error}) ->
     erlang:error(Error);
 foo({throw,Throw}) ->
     erlang:throw(Throw);
@@ -1077,7 +1077,7 @@ stacktrace(_Config) ->
         error:{badmatch,_}:Stk2 ->
             [{?MODULE,stacktrace_2,0,_},
              {?MODULE,stacktrace,1,_}|_] = Stk2,
-            Stk2 = erlang:get_stacktrace(),
+            Stk2 = id(erlang:get_stacktrace()),
             ok
     end,
 
@@ -1085,7 +1085,7 @@ stacktrace(_Config) ->
         stacktrace_3(a, b)
     catch
         error:function_clause:Stk3 ->
-            Stk3 = erlang:get_stacktrace(),
+            Stk3 = id(erlang:get_stacktrace()),
             case lists:module_info(native) of
                 false ->
                     [{lists,prefix,[a,b],_}|_] = Stk3;
@@ -1106,14 +1106,14 @@ stacktrace_1(X, C1, Y) ->
             C1 -> value1
         catch
             C1:D1:Stk1 ->
-                Stk1 = erlang:get_stacktrace(),
+                Stk1 = id(erlang:get_stacktrace()),
                 {caught1,D1,Stk1}
         after
             foo(Y)
         end of
         V2 -> {value2,V2}
     catch
-        C2:D2:Stk2 -> {caught2,{C2,D2},Stk2=erlang:get_stacktrace()}
+        C2:D2:Stk2 -> {caught2,{C2,D2},Stk2=id(erlang:get_stacktrace())}
     end.
 
 stacktrace_2() ->
@@ -1158,12 +1158,12 @@ nested_stacktrace_1({X1,C1,V1}, {X2,C2,V2}) ->
         V1 -> value1
     catch
         C1:V1:S1 ->
-            S1 = erlang:get_stacktrace(),
+            S1 = id(erlang:get_stacktrace()),
             T2 = try foo(X2) of
                      V2 -> value2
                  catch
                      C2:V2:S2 ->
-                         S2 = erlang:get_stacktrace(),
+                         S2 = id(erlang:get_stacktrace()),
                          {caught2,S2}
                  end,
             {caught1,S1,T2}
