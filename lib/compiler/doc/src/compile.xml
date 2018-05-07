@@ -419,6 +419,17 @@ module.beam: module.erl \
           <item>
             <p>This option is not recommended.</p>
 
+    <tag><c>from_core</c></tag>
+          <item>
+            <p>The input file is expected to be expanded erlang code (default
+	      file suffix ".E"). Notice that the format of expanded erlang files
+              is not documented, and can change between releases.</p>
+          </item>
+
+          <tag><c>no_strict_record_tests</c></tag>
+          <item>
+            <p>This option is not recommended.</p>
+
 	    <p>By default, the generated code for
 	      operation <c>Record#record_tag.field</c> verifies that
 	      the tuple <c>Record</c> has the correct size for
@@ -958,4 +969,3 @@ Module:format_error(ErrorDescriptor)</code>
     </p>
   </section>
 </erlref>
-

@@ -508,6 +508,8 @@ passes_1([]) ->
 
 pass(from_core) ->
     {".core",[?pass(parse_core)|core_passes()]};
+pass(from_expanded) ->
+    {".E",[?pass(parse_module),?pass(core)|core_passes()]};
 pass(from_asm) ->
     {".S",[?pass(beam_consult_asm)|asm_passes()]};
 pass(from_beam) ->
