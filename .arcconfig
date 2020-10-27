@@ -1,0 +1,9 @@
+{
+  "project_id" : "WAOTP",
+  "conduit_uri" : "https://phabricator.fb.com/api/",
+  "arc.feature.start.default" : "master",
+  "git:arc.feature.start.default" : "master",
+  "base" : "git:HEAD^, hg:.^",
+  "arc.land.onto.default" : "master",
+  "phutil_libraries" : {"waserver-arcanist" : "arcanist/"}
+}

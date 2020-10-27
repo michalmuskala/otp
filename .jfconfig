@@ -1,0 +1,63 @@
+{
+  "capabilities": [
+    "apply",
+    "land",
+    "submit",
+  ],
+  "project_id": "WAOTP",
+  "land_modes": {
+    "default": {
+      "description": "Default land mode for WAOTP",
+      "landStyle": "wait_for_all",
+      "skipSanityChecks": false,
+      "checkDiffSuccess": true,
+      "checks": {
+        "verifyAccepted": true,
+        "verifyDiffLocalCommitsMatch": true,
+        "verifyDiffsOnCommits": true,
+        "verifyNoMerges": true
+      }
+    }
+  },
+  "sandcastle_job_specs": [
+    {
+      "alias": "whatsapp-otp-diff-determinator",
+      "args": {
+        "name": "WhatsApp OTP diff target determinator",
+        "oncall": "whatsapp_dev_infra",
+        "disable_secondary_checkouts": true,
+        "steps": [
+          {
+            "name": "Install determinator",
+            "shell": "mkdir -p .determinator && fbpkg fetch -d .determinator wa.server.determinator:prod"
+          },
+          {
+            "name": "Run OTP determinator for diff",
+            "shell": "./.determinator/determinator.par otp --schedule-type diff",
+            "determinator": true,
+            "required": true
+          },
+          {
+            "name": "Run OTP determinator for otp validation",
+            "shell": "./.determinator/determinator.par otp_fbpkg_smoke_pipeline --fbpkg-tag otp-diff-$(git rev-parse --short=6 {JF_COMMIT_HASH})-test --waserver-hash master --schedule-type diff --use_buck2",
+            "determinator": true,
+            "required": true
+          }
+        ]
+      },
+      "capabilities": {
+        "type": "whatsapp",
+        "vcs": "whatsapp-otp-git",
+        "tenant": "whatsapp_erlang_tests"
+      },
+      "scheduleType": "diff",
+      "command": "SandcastleUniversalCommand",
+      "priority": 0,
+      "tags": [
+        "whatsapp-otp-ci"
+      ],
+      "required_tag_identities": ["waotp_fbpkg_sandcastle_tag"],
+      "oncall": "whatsapp_dev_infra"
+    }
+  ]
+}
