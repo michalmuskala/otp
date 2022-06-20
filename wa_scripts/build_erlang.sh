@@ -4,11 +4,19 @@ set -euxo pipefail
 script_loc="$(dirname "${BASH_SOURCE[0]}")"
 source "$script_loc/build_erlang_env_setup.sh"
 
+# ets-write-concurrency-locks: change from default 64 to maximum 256
+#  for all write-concurrent hashset tables. This reduces lock contention
+#  of db_hash_slot rwlock at the expense of allocating ~3KiB more per
+#  write-concurrent ETS set/bag/duplicate_bag table.
 ./configure \
     --prefix=/ \
+    --disable-evp-hmac \
     --disable-sctp \
+    --enable-builtin-zlib \
+    --enable-dynamic-ssl-lib \
     --enable-lock-counter \
     --with-dynamic-trace=systemtap \
+    --with-ets-write-concurrency-locks=256 \
     --with-microstate-accounting=extra \
     --with-ssl="$OPENSSL_PATH" \
     --without-javac \
@@ -36,7 +44,7 @@ done
 rm -rf "$DEST_DIR"
 install -m 0755 -d "$DEST_DIR"
 
-make RELEASE_ROOT="$DEST_DIR" DOC_TARGETS='chunks man' -j8 release release_docs
+make RELEASE_ROOT="$DEST_DIR" DOC_TARGETS='chunks' -j8 release release_docs
 
 ERTS_VSN=$(sed -n "s/^VSN[  ]*=[  ]*\\(.*\\)/\\1/p" < erts/vsn.mk)
 
