@@ -48,6 +48,13 @@ make RELEASE_ROOT="$DEST_DIR" DOC_TARGETS='chunks' -j8 release release_docs
 
 ERTS_VSN=$(sed -n "s/^VSN[  ]*=[  ]*\\(.*\\)/\\1/p" < erts/vsn.mk)
 
+# Round up the size of the text segment to a multiple of 2MiB for THP
+( cd "$script_loc" ; make )
+for f in bin/x86_64-pc-linux-gnu/beam.*.smp
+do
+    $script_loc/round-up-text-segment $f
+done
+
 # Install different BEAM types
 install -vm 0755 -t "$DEST_DIR/erts-$ERTS_VSN/bin" \
     bin/x86_64-pc-linux-gnu/beam.*.smp \
