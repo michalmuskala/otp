@@ -715,7 +715,7 @@ decode_continue(end_of_input, State) ->
         _ ->
             error(unexpected_end)
     end;
-decode_continue(Cont, {Rest, Acc, Stack, Decode, FuncData}) when is_binary(Cont) ->
+decode_continue(Cont, {Rest, Acc, Stack, #decode{} = Decode, FuncData}) when is_binary(Cont) ->
     Binary = <<Rest/binary, Cont/binary>>,
     case FuncData of
         value ->
@@ -808,13 +808,10 @@ number_zero(<<$., Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) ->
     number_frac(Rest, Original, Skip, Acc, Stack, Decode, Len + 1);
 number_zero(<<E, Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) when E =:= $E; E =:= $e ->
     number_exp_copy(Rest, Original, Skip, Acc, Stack, Decode, Len + 1, <<"0">>);
+number_zero(<<>>, Original, Skip, Acc, Stack, Decode, Len) ->
+    unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, 0});
 number_zero(Rest, Original, Skip, Acc, Stack, Decode, Len) ->
-    case Rest =:= <<>> of
-        true ->
-            unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, 0});
-        false ->
-            continue(Rest, Original, Skip+Len, Acc, Stack, Decode, 0)
-    end.
+    continue(Rest, Original, Skip+Len, Acc, Stack, Decode, 0).
 
 number(<<Num, Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) when ?is_0_to_9(Num) ->
     number(Rest, Original, Skip, Acc, Stack, Decode, Len + 1);
@@ -823,14 +820,12 @@ number(<<$., Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) ->
 number(<<E, Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) when E =:= $E; E =:= $e ->
     Prefix = binary_part(Original, Skip, Len),
     number_exp_copy(Rest, Original, Skip, Acc, Stack, Decode, Len + 1, Prefix);
+number(<<>>, Original, Skip, Acc, Stack, Decode, Len) ->
+    Int = (Decode#decode.integer)(binary_part(Original, Skip, Len)),
+    unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, Int});
 number(Rest, Original, Skip, Acc, Stack, Decode, Len) ->
     Int = (Decode#decode.integer)(binary_part(Original, Skip, Len)),
-    case Rest =:= <<>> of
-        true ->
-            unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, Int});
-        false ->
-            continue(Rest, Original, Skip+Len, Acc, Stack, Decode, Int)
-    end.
+    continue(Rest, Original, Skip+Len, Acc, Stack, Decode, Int).
 
 number_frac(<<Byte, Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) when ?is_0_to_9(Byte) ->
     number_frac_cont(Rest, Original, Skip, Acc, Stack, Decode, Len + 1);
@@ -845,20 +840,18 @@ number_frac_cont(Rest, Original, Skip, Acc, Stack, Decode, Len) ->
     Token = binary_part(Original, Skip, Len),
     float_decode(Rest, Original, Skip, Acc, Stack, Decode, Len, Token).
 
+float_decode(<<>>, Original, Skip, Acc, Stack, Decode, Len, Token) ->
+    try (Decode#decode.float)(Token) of
+        Float -> unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, Float})
+    catch
+        _:_ -> unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {float_error, Token, Skip})
+    end;
 float_decode(<<Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len, Token) ->
     try (Decode#decode.float)(Token) of
-        Float when Rest =:= <<>> ->
-            unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {number, Float});
         Float ->
             continue(Rest, Original, Skip+Len, Acc, Stack, Decode, Float)
     catch
-        _:_ ->
-            case Rest =:= <<>> of
-                true ->
-                    unexpected(Original, Skip, Acc, Stack, Decode, Len, 0, {float_error, Token, Skip});
-                false ->
-                    unexpected_sequence(Token, Skip)
-            end
+        _:_ -> unexpected_sequence(Token, Skip)
     end.
 
 number_exp(<<Byte, Rest/bits>>, Original, Skip, Acc, Stack, Decode, Len) when ?is_0_to_9(Byte) ->
