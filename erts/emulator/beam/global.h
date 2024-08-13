@@ -1258,6 +1258,8 @@ extern Uint erts_coverage_mode;
 
 #ifdef BEAMASM
 extern int erts_jit_asm_dump;
+extern int erts_jit_use_thp;
+extern int erts_jit_use_hugetlb;
 #endif
 
 void erl_start(int, char**);

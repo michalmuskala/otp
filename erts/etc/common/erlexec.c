@@ -939,6 +939,13 @@ int main(int argc, char **argv)
                       add_Eargs(argv[i+1]);
                       i++;
                       break;
+		  case 'j':
+		      NEXT_ARG_CHECK();
+		      argv[i][0] = '-';
+		      add_Eargs(argv[i]);
+		      add_Eargs(argv[i+1]);
+		      i++;
+		      break;
 		  case 'S':
 		      if (argv[i][2] == 'P') {
 			  if (argv[i][3] != '\0')

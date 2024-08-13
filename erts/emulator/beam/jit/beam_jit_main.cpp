@@ -177,10 +177,41 @@ static auto create_allocator(const JitAllocator::CreateParams &params) {
     return std::make_pair((JitAllocator *)nullptr, false);
 }
 
-static JitAllocator *pick_allocator() {
+static auto single_mapping_allocator() {
     JitAllocator::CreateParams params;
-    JitAllocator *allocator;
-    bool single_mapped;
+
+    if (erts_jit_use_hugetlb || erts_jit_use_thp) {
+        params.options = JitAllocatorOptions::kUseLargePages;
+    }
+    params.blockSize = 2 << 20;
+
+    return create_allocator(params);
+}
+
+static auto dual_mapping_allocator() {
+    JitAllocator::CreateParams params;
+
+    params.options = JitAllocatorOptions::kUseDualMapping;
+    if (erts_jit_use_hugetlb) {
+        params.options |= JitAllocatorOptions::kUseLargePages;
+    }
+    /* Default to dual-mapped memory with separate executable and writable
+     * regions of the same code. This is required for platforms that enforce
+     * W^X, and we prefer it when available to catch errors sooner.
+     *
+     * `blockSize` is analogous to "carrier size," and we pick something
+     * much larger than the default since dual-mapping implies having one
+     * file descriptor per block on most platforms. The block sizes do grow
+     * over time, but we don't want to waste half a dozen fds just to get to
+     * the shell on platforms that are very fd-constrained. */
+    params.blockSize = 32 << 20;
+
+    return create_allocator(params);
+}
+
+static JitAllocator *pick_allocator() {
+    JitAllocator *allocator = nullptr;
+    bool single_mapped = false;
 
 #if defined(VALGRIND)
     erts_jit_single_map = 1;
@@ -202,29 +233,12 @@ static JitAllocator *pick_allocator() {
     }
 #endif
 
-    /* Default to dual-mapped memory with separate executable and writable
-     * regions of the same code. This is required for platforms that enforce
-     * W^X, and we prefer it when available to catch errors sooner.
-     *
-     * `blockSize` is analogous to "carrier size," and we pick something
-     * much larger than the default since dual-mapping implies having one
-     * file descriptor per block on most platforms. The block sizes do grow
-     * over time, but we don't want to waste half a dozen fds just to get to
-     * the shell on platforms that are very fd-constrained. */
-    params.reset();
-    params.blockSize = 32 << 20;
-
-    allocator = nullptr;
-    single_mapped = false;
-
     if (!erts_jit_single_map) {
-        params.options = JitAllocatorOptions::kUseDualMapping;
-        std::tie(allocator, single_mapped) = create_allocator(params);
+        std::tie(allocator, single_mapped) = dual_mapping_allocator();
     }
 
     if (allocator == nullptr) {
-        params.options &= ~JitAllocatorOptions::kUseDualMapping;
-        std::tie(allocator, single_mapped) = create_allocator(params);
+        std::tie(allocator, single_mapped) = single_mapping_allocator();
     }
 
     if (erts_jit_single_map && !single_mapped) {

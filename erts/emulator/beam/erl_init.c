@@ -146,6 +146,10 @@ int erts_no_line_info = 0;	/* -L: Don't load line information */
 #ifdef BEAMASM
 Uint erts_coverage_mode = ERTS_COV_NONE; /* -JPcover: Enable coverage */
 int erts_jit_asm_dump = 0;	/* -JDdump: Dump assembly code */
+
+int erts_jit_use_thp = 0;     /* -jit_use_thp: use THP pages */
+
+int erts_jit_use_hugetlb = 0;  /* -jit_use_hugetlb: use HugeTLB pages */
 #endif
 
 /*
@@ -501,6 +505,36 @@ get_arg(char* rest, char* next, int* ip)
     return rest;
 }
 
+/*
+ * When parameter name matches, parses its argument as a boolean and
+ * advances the argument index.  Returns true or false depending on
+ * whether the parameter name matches.  If the value cannot be parsed
+ * as true or false, usage information is printed and the program is
+ * immediately exited.
+ */
+static int
+maybe_get_bool_arg(const char *name, char **argv, int *i, int *value)
+{
+    char *param, *arg;
+    int result;
+
+    result = 0;
+    param = argv[*i] + 1;
+    if (has_prefix(name, param)) {
+        arg = get_arg(param + strlen(name), argv[*i + 1], i);
+        result = 1;
+        if (sys_strcmp(arg, "true") == 0) {
+            *value = 1;
+        } else if (sys_strcmp(arg, "false") == 0) {
+            *value = 0;
+        } else {
+            erts_fprintf(stderr, "bad %s flag: %s\n", param - 1, arg);
+            erts_usage();
+        }
+    }
+    return result;
+}
+
 static void 
 load_preloaded(void)
 {
@@ -600,6 +634,9 @@ __decl_noreturn void __noreturn  erts_usage(void)
     erts_fprintf(stderr, "-JPperf true|false|dump|map|fp|no_fp   enable or disable support for perf on Linux\n");
     erts_fprintf(stderr, "-JPperfdirectory <directory>    set the directory perf files are stored. Default: /tmp\n");
     erts_fprintf(stderr, "-JMsingle bool enable the use of single-mapped RWX memory for JIT:ed code\n");
+    erts_fprintf(stderr, "\n");
+    erts_fprintf(stderr, "-jit_use_hugetlb bool   enable or disable allocating HugeTLB pages for JIT pages on Linux\n");
+    erts_fprintf(stderr, "-jit_use_thp bool       enable or disable Transparent Huge Pages for JIT pages on Linux\n");
     erts_fprintf(stderr, "\n");
 #endif
 
@@ -1801,6 +1838,30 @@ erl_start(int argc, char **argv)
                      "JIT is not supported on this system (option %s)\n",
                      argv[i]);
         erts_usage();
+#endif
+        break;
+
+        case 'j':
+#ifdef BEAMASM
+	    if (maybe_get_bool_arg("jit_use_thp", argv, &i, &erts_jit_use_thp)) {
+#ifndef __linux__
+                erts_fprintf(stderr, "%s is not supported on this platform\n", argv[i - 1]);
+                erts_usage();
+#endif
+                break;
+            }
+            if (maybe_get_bool_arg("jit_use_hugetlb", argv, &i, &erts_jit_use_hugetlb)) {
+#ifndef __linux__
+                erts_fprintf(stderr, "%s is not supported on this platform\n", argv[i - 1]);
+                erts_usage();
+#endif
+                break;
+            }
+#else
+            erts_fprintf(stderr,
+                         "JIT is not supported on this system (option %s)\n",
+                         argv[i]);
+            erts_usage();
 #endif
         break;
 

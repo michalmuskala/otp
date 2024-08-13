@@ -30,7 +30,7 @@ static constexpr uint32_t kJitAllocatorMultiPoolCount = 3;
 //! Minimum granularity (and the default granularity for pool #0).
 static constexpr uint32_t kJitAllocatorBaseGranularity = 64;
 
-//! Maximum block size (32MB).
+//! Maximum block size (64MB).
 static constexpr uint32_t kJitAllocatorMaxBlockSize = 1024 * 1024 * 64;
 
 // JitAllocator - Fill Pattern
