@@ -53,6 +53,8 @@ x86_64-unknown-freebsd[0-9]*.[0-9]*
 x86_64-unknown-openbsd[0-9]*.[0-9]*
 powerpc-unknown-linux-gnu
 aarch64-unknown-linux-gnu
+wa_scripts/round-up-text-segment
+wa_scripts/round-up-text-segment.o
 
 # Mac OS X
 a.out.dSYM/

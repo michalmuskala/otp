@@ -98,4 +98,9 @@ ln -sfv dyn_erl erl
 # copy the trampoline script to launch erl from dotslash.
 install -vm 0755 "$ERL_TOP/wa_scripts/erl_trampoline.sh" "$DEST_DIR/bin"
 
+# install elixir
+which erl
+cd "$ERL_TOP/elixir"
+make DESTDIR="$DEST_DIR/elixir" PREFIX="" MAN_PREFIX="/elixir_man" install
+
 echo "Release installed in $DEST_DIR"
