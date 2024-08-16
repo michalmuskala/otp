@@ -50,13 +50,26 @@ ERTS_VSN=$(sed -n "s/^VSN[  ]*=[  ]*\\(.*\\)/\\1/p" < erts/vsn.mk)
 
 # Round up the size of the text segment to a multiple of 2MiB for THP
 ( cd "$script_loc" ; make )
-for f in bin/x86_64-pc-linux-gnu/beam.*.smp
+for f in bin/x86_64-pc-linux-gnu/beam.*
 do
     $script_loc/round-up-text-segment $f
+    chmod 0755 $f
+done
+
+for emu_type in frmptr opt
+do
+    $script_loc/bolt.sh jit $emu_type
+    if [ "$emu_type" = "opt" ]
+    then
+	cp bin/x86_64-pc-linux-gnu/beam.{jit,smp}
+    else
+	cp bin/x86_64-pc-linux-gnu/beam.$emu_type.{jit,smp}
+    fi
 done
 
 # Install different BEAM types
 install -vm 0755 -t "$DEST_DIR/erts-$ERTS_VSN/bin" \
+    bin/x86_64-pc-linux-gnu/beam.smp \
     bin/x86_64-pc-linux-gnu/beam.*.smp \
     bin/x86_64-pc-linux-gnu/erl_child_setup.*
 

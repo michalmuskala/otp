@@ -34,13 +34,13 @@ for DEP in "${DEPENDENCIES[@]}"; do
 done
 
 LDFLAGS=""
+LDFLAGS="$LDFLAGS -Wl,--emit-relocs"
 LDFLAGS="$LDFLAGS -Wl,-rpath=$PLATFORM_PATH/lib"
 LDFLAGS="$LDFLAGS -Wl,-z,common-page-size=2097152"
 LDFLAGS="$LDFLAGS -Wl,-z,max-page-size=2097152"
 LDFLAGS="$LDFLAGS -Wl,-z,notext"
 LDFLAGS="$LDFLAGS -Wl,-z,now"
 LDFLAGS="$LDFLAGS -Wl,-z,relro"
-LFDLAGS="$LDFLAGS -Wl,--gc-sections"
 for DEP in "${DEPENDENCIES[@]}"; do
     LDFLAGS="$LDFLAGS -L$DEP/lib"
 done
