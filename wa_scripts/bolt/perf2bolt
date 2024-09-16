@@ -1,0 +1,40 @@
+#!/usr/bin/env dotslash
+
+// @generated SignedSource<<fdfb18ed53eaa7009e8fb9ec7b962356>>
+// MSDK schedule URL: https://www.internalfb.com/intern/msdk/bump/?action=view&schedule_fbid=1683656565768553
+// Sandcastle build trigger URL: https://www.internalfb.com/intern/sandcastle/job/36028798903810844/
+
+{
+    "name": "cshapiro_bolt_clone",
+    "oncall": "oncall+whatsapp_profiling@xmail.facebook.com",
+    "build_info": {
+        "config_script": "bolt-tests/sandcastle/msdk-spec-release-dotslash.py",
+        "commit_repo": "osmeta/osmeta/manifest",
+        "commit_hash": "toolchain/server/bolt-release",
+        "commit_date": "2024-08-12 12:56:06 PDT",
+        "commit_timestamp": 1723492566,
+        "grepo_manifest_handle": "GC3Gbh2tCt4hrqUCAA29yRxi6jxfblMqAABU",
+        "msdk_package_fbid": "3104282359738661"
+    },
+    "signatures": {
+        "msdk": "<<crypto.managed_sdk.mac:Aea6wLgnF8ouZr5LLBlQNEK8kIE>>"
+    },
+    "platforms": {
+        "linux/aarch64": {
+            "scheme": "everstore",
+            "handle": "GICWmAD_i_cxtrQDAHrvdZh2H8RFblMqAAAA",
+            "extract": {
+                "path": "bin/perf2bolt",
+                "decompress": "tar.gz"
+            }
+        },
+        "linux/x86_64": {
+            "scheme": "everstore",
+            "handle": "GICWmAA6uUVrDqsHAB3tbSLUk5MhblMqAAAA",
+            "extract": {
+                "path": "bin/perf2bolt",
+                "decompress": "tar.gz"
+            }
+        }
+    }
+}
