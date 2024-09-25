@@ -1,0 +1,3 @@
+#! /bin/sh
+manifold get --overwrite_local_path waotp_perf_data_bolt_devbuild/tree/caa6a847de/perf.data.frmptr.jit
+manifold get --overwrite_local_path waotp_perf_data_bolt_devbuild/tree/caa6a847de/perf.data.jit
