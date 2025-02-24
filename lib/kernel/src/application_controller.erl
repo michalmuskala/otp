@@ -146,8 +146,7 @@
 
 %%-----------------------------------------------------------------
 %% loading     = [{AppName, From}] - Load not yet finished
-%% starting    = [{AppName, RestartType, Type, From}] - Start not
-%%                 yet finished
+%% starting    = [{AppName, RestartType, Type}] - Start not yet finished
 %% start_p_false = [{AppName, RestartType, Type, From}] - Start not
 %%                 executed because permit == false
 %% running     = [{AppName, Pid}] - running locally (Pid == application_master)
@@ -700,23 +699,23 @@ handle_call({start_application, AppName, RestartType}, From, S) ->
 		    Perm = application:get_env(kernel, permissions),
 		    case {Cntrl, Perm} of
 			{true, _} ->
-			    {noreply, S#state{starting = [{AppName, RestartType, normal, From} |
+			    {noreply, S#state{starting = [{AppName, RestartType, normal} |
 							  Starting],
 					      start_req = [{AppName, From} | Start_req]}};
 			{false, undefined} ->
 			    spawn_starter(Appl, S, normal),
-			    {noreply, S#state{starting = [{AppName, RestartType, normal, From} |
+			    {noreply, S#state{starting = [{AppName, RestartType, normal} |
 							  Starting],
 					      start_req = [{AppName, From} | Start_req]}};
 			{false, {ok, Perms}} ->
 			    case lists:member({AppName, false}, Perms) of
 				false ->
 				    spawn_starter(Appl, S, normal),
-				    {noreply, S#state{starting = [{AppName, RestartType, normal, From} |
+				    {noreply, S#state{starting = [{AppName, RestartType, normal} |
 								  Starting],
 						      start_req = [{AppName, From} | Start_req]}};
 				true ->
-				    SS = S#state{start_p_false = [{AppName, RestartType, normal, From} |
+				    SS = S#state{start_p_false = [{AppName, RestartType, normal} |
 								  SPF]},
 				    {reply, ok, SS}
 			    end
@@ -788,9 +787,9 @@ handle_call({permit_application, AppName, Bool}, From, S) ->
 		%% start requested but not started because permit was false
 		{true, {true, Appl}, false, {value, Tuple}, false, false} ->
 		    update_permissions(AppName, Bool),
-		    {_AppName2, RestartType, normal, _From} = Tuple,
+		    {_AppName2, RestartType, normal} = Tuple,
 		    spawn_starter(Appl, S, normal),
-		    SS = S#state{starting = [{AppName, RestartType, normal, From} | Starting],
+		    SS = S#state{starting = [{AppName, RestartType, normal} | Starting],
 				 start_p_false = keydelete(AppName, 1, SPF),
 				 start_req = [{AppName, From} | Start_req]},
 		    {noreply, SS};
@@ -798,7 +797,7 @@ handle_call({permit_application, AppName, Bool}, From, S) ->
 		{true, {true, Appl}, _, _, {value, {AppName, RestartType}}, false} ->
 		    update_permissions(AppName, Bool),
 		    spawn_starter(Appl, S, normal),
-		    SS = S#state{starting = [{AppName, RestartType, normal, From} | Starting],
+		    SS = S#state{starting = [{AppName, RestartType, normal} | Starting],
 				 started = keydelete(AppName, 1, Started),
 				 start_req = [{AppName, From} | Start_req]},
 		    {noreply, SS};
@@ -944,7 +943,7 @@ handle_call({start_type, AppName}, _From, S) ->
     StartType = case lists:keyfind(AppName, 1, Starting) of
 		    false ->
 			local;
-		    {_AppName, _RestartType, Type, _F} ->
+		    {_AppName, _RestartType, Type} ->
 			Type
 		end,
     {reply, StartType, S};
@@ -968,7 +967,7 @@ handle_application_started(AppName, Res, S) ->
     #state{starting = Starting, running = Running, started = Started, 
 	   start_req = Start_req} = S,
     Start_reqN = reply_to_requester(AppName, Start_req, Res),
-    {AppName, RestartType, _Type, _From} = lists:keyfind(AppName, 1, Starting),
+    {AppName, RestartType, _Type} = lists:keyfind(AppName, 1, Starting),
     case Res of
 	{ok, Id} ->
 	    case AppName of
@@ -1069,7 +1068,7 @@ handle_info({ac_load_application_reply, AppName, Res}, S) ->
 handle_info({ac_start_application_reply, AppName, Res}, S) ->
     Start_req = S#state.start_req,
     case lists:keyfind(AppName, 1, Starting = S#state.starting) of
-	{_AppName, RestartType, Type, From} ->
+	{_AppName, RestartType, Type} ->
 	    case Res of
 		start_it ->
 		    {true, Appl} = get_loaded(AppName),
@@ -1091,7 +1090,7 @@ handle_info({ac_start_application_reply, AppName, Res}, S) ->
 		    {true, Appl} = get_loaded(AppName),
 		    spawn_starter(Appl, S, Takeover),
 		    NewStarting1 = keydelete(AppName, 1, Starting),
-		    NewStarting = [{AppName, RestartType, Takeover, From} | NewStarting1],
+		    NewStarting = [{AppName, RestartType, Takeover} | NewStarting1],
 		    {noreply, S#state{starting = NewStarting}};
 		{error, Reason} = Error when RestartType =:= permanent ->
 		    Start_reqN = reply_to_requester(AppName, Start_req, Error),
@@ -1178,8 +1177,8 @@ handle_info({ac_change_application_req, AppName, Msg}, S) ->
 			    {noreply, S};
 			%% starting
 			{{true, _Appl}, {value, Tuple}, false, false} ->
-			    {_AppName, _RStype, _Type, From} = Tuple,
-			    NewS = do_start(AppName, undefined, normal, From, S),
+			    {_AppName, _RStype, _Type} = Tuple,
+			    NewS = do_start(AppName, undefined, normal, undefined, S),
 			    {noreply, NewS};
 			%% started but not running
 			{{true, _Appl}, _, {value, {AppName, _RestartType}}, false} ->
@@ -1393,8 +1392,7 @@ do_start(AppName, RT, Type, From, S) ->
 	    Starting = case lists:keymember(AppName, 1, S#state.starting) of
 			   false ->
 			       %% UW: don't know if this is necessary
-			       [{AppName, RestartType, Type, From} | 
-				S#state.starting];
+			       [{AppName, RestartType, Type} | S#state.starting];
 			   true ->
 			       S#state.starting
 		       end,
