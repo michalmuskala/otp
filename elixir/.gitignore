@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2021 The Elixir Team
+# SPDX-FileCopyrightText: 2012 Plataformatec
+
+/doc/
+/lib/*/ebin/
+/lib/*/_build/
+/lib/*/tmp/
+/lib/elixir/src/*_parser.erl
+/lib/elixir/test/ebin/
+/man/elixir.1
+/man/iex.1
+/Docs-v*.zip
+/Precompiled-v*.zip
+/.eunit
+.elixir.plt
+erl_crash.dump
+/cover/
