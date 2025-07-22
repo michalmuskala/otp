@@ -56,16 +56,16 @@ do
     chmod 0755 $f
 done
 
-for emu_type in frmptr opt
-do
-    $script_loc/bolt.sh jit $emu_type
-    if [ "$emu_type" = "opt" ]
-    then
-	cp bin/x86_64-pc-linux-gnu/beam.{jit,smp}
-    else
-	cp bin/x86_64-pc-linux-gnu/beam.$emu_type.{jit,smp}
-    fi
-done
+#for emu_type in frmptr opt
+#do
+#    $script_loc/bolt.sh jit $emu_type
+#    if [ "$emu_type" = "opt" ]
+#    then
+#	cp bin/x86_64-pc-linux-gnu/beam.{jit,smp}
+#    else
+#	cp bin/x86_64-pc-linux-gnu/beam.$emu_type.{jit,smp}
+#    fi
+#done
 
 # Install different BEAM types
 install -vm 0755 -t "$DEST_DIR/erts-$ERTS_VSN/bin" \
