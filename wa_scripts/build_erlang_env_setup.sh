@@ -9,6 +9,8 @@ export OPENSSL_PATH=/mnt/gvfs/third-party2/openssl/42ea077b4808b1277c8420c959036
 export SYSTEMTAP_PATH=/mnt/gvfs/third-party2/systemtap/e114897070c1a58100e33cbb1cb32bf4d8e13c0e/4.7/platform010/5e1a20f
 DEPENDENCIES=("$NCURSES_PATH" "$SYSTEMTAP_PATH")
 
+export ERL_AFLAGS="+P65536 +Q1024"
+
 for DEP in "${DEPENDENCIES[@]}"; do
     PATH=$DEP/bin:$PATH
 done
